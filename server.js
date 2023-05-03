@@ -63,6 +63,26 @@ async function saveClient() {
     }
 }
 
+
+async function saveClient() {
+    try {
+        const client2 = new ClientModel({
+            name: 'Tanel',
+            password: 'password12311',
+            birthday: new Date("1947-06-30"),
+            gender: "Male",
+            email: "Tanel@client.fit",
+            city: "Berlin",
+            home_gym: "Sparta",
+            phone: "1337",
+            trainerId: '644faf4484fe1969b0782942'
+        })
+        await client2.save()
+    } catch (e) {
+        console.log(e.message)
+    }
+}
+
 app.get('/trainers/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -139,6 +159,21 @@ app.get('/trainer/clients/:id', async (req, res) => {
         return res.status(500).send('Internal Server Error')
     }
 })
+
+app.put('/remove_client/:trainerId/:id', async (req, res) => {
+    try {
+
+        const updatedFields = {
+            trainerId: null
+        };
+
+        const updatedClient = await ClientModel.findOneAndUpdate({_id: req.params.id}, {trainerId: '644faf4484fe1969b0782942'}, {new: true});
+        return res.status(200).send(updatedClient)
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send('Internal Server Error');
+    }
+});
 
 // app.post('/register', async (req, res) => {
 //     try {
