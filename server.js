@@ -64,7 +64,7 @@ async function saveClient() {
 }
 
 
-async function saveClient() {
+async function saveClient1() {
     try {
         const client2 = new ClientModel({
             name: 'Tanel',
@@ -162,12 +162,11 @@ app.get('/trainer/clients/:id', async (req, res) => {
 
 app.put('/remove_client/:trainerId/:id', async (req, res) => {
     try {
-
         const updatedFields = {
             trainerId: null
         };
 
-        const updatedClient = await ClientModel.findOneAndUpdate({_id: req.params.id}, {trainerId: '644faf4484fe1969b0782942'}, {new: true});
+        const updatedClient = await ClientModel.findOneAndUpdate({_id: req.params.id, trainerId: req.params.trainerId}, updatedFields, {new: true});
         return res.status(200).send(updatedClient)
     } catch (error) {
         console.log(error);
