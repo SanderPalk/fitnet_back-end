@@ -166,16 +166,53 @@ app.get('/schedule/:id', async (req, res) => {
         const workouts = []
         const clients = await ClientModel.find({trainerId: trainerId})
         for (const client of clients) {
-            const clientWorkouts = await WorkoutModel.find({ userId: client._id})
-            for (const clientWorkout of clientWorkouts){
-            workouts.push(clientWorkout)
+            const clientWorkouts = await WorkoutModel.find({userId: client._id})
+            for (const clientWorkout of clientWorkouts) {
+                const workoutWithClientName = {
+                    ...(await clientWorkout).toObject(),
+                    userName: client.name
+                }
+                workouts.push(workoutWithClientName)
             }
+        }
+        const trainerWorkouts = await WorkoutModel.find({userId: trainerId})
+        for (const trainerWorkout of trainerWorkouts) {
+            const trainerWorkoutWithTag = {
+                ...(await  trainerWorkout).toObject(),
+                userName: 'Me'
+            }
+            workouts.push(trainerWorkoutWithTag)
         }
         return res.status(200).send(workouts)
     } catch (error) {
         console.log(error)
         return res.status(500).send('Internal Server Error')
     }
+})
+
+app.post('/add-workout', async (req, res) => {
+    try {
+        await WorkoutModel.create({
+            userId: req.body.userId,
+            date: new Date(req.body.date),
+            description: req.body.description
+        })
+        return res.status(200).send('New workout added')
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
+})
+
+app.delete('/delete-workout=:workoutID', async (req, res) =>{
+    try {
+        await WorkoutModel.findByIdAndDelete(req.params.workoutID)
+        return res.status(200).send('Workout deleted')
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
+
 })
 
 // app.post('/register', async (req, res) => {
