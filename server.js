@@ -174,8 +174,25 @@ app.put('/remove_client/:trainerId/:id', async (req, res) => {
     }
 });
 
-// app.post('/register', async (req, res) => {
-//     try {
-//
-//     }
-// })
+
+app.post('/register', async (req, res) => {
+    try {
+        const client = new ClientModel({
+            name: req.body.name,
+            password: req.body.password,
+            birthday: new Date("1947-06-30"),
+            gender: "",
+            email: req.body.email,
+            city: "",
+            home_gym: "",
+            phone: req.body.phone,
+            trainerId: null
+        });
+        await client.save();
+        res.status(200).send(client);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Failed to register an account.");
+    }
+});
+
