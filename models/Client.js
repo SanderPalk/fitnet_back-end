@@ -13,6 +13,6 @@ const ClientsSchema = new mongoose.Schema({
     trainerId: {type: ObjectId, ref: 'Trainers'}
 })
 
-const TrainerModel = mongoose.model("Clients", ClientsSchema)
+const ClientModel = mongoose.model("Clients", ClientsSchema)
 
-module.exports = TrainerModel
+module.exports = ClientModel
