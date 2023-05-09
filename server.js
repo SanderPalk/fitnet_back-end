@@ -7,6 +7,8 @@ const bodyParser = require("body-parser")
 
 const TrainerModel = require("./models/Trainer")
 const ClientModel = require("./models/Client")
+const WorkoutModel = require("./models/Workouts")
+const ExerciseModel = require("./models/Exercise")
 
 const corsOptions = {
     origin: ['http://localhost:3000', process.env.APP_URI]
@@ -63,6 +65,40 @@ async function saveClient() {
     }
 }
 
+async function saveWorkout() {
+    try {
+        const workout = new WorkoutModel({
+            userId: '64524f8dc3271a3d43b185e0',
+            date: new Date("2023-05-16")
+        })
+        await workout.save()
+    } catch (e) {
+        console.log(e.message)
+    }
+}
+
+async function saveExercise() {
+    try {
+        const exercise = new ExerciseModel({
+            workoutId: '6459014383f9cd4e5c17269e',
+            exerciseName: 'Lift Red Bull can',
+            sets: [
+                {
+                    weight: 2.5,
+                    reps: 300
+                },
+                {
+                    weight: 5,
+                    reps: 200
+                }
+                ]
+        })
+        await exercise.save()
+    } catch (e) {
+        console.log(e.message)
+    }
+}
+
 app.get('/trainers/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -109,17 +145,24 @@ function validatePassword(thePassword, validatingPassword) {
 
 app.post('/login', async (req, res) => {
     try {
+        const requestPassword = req.body.password
+        const client = await ClientModel.findOne({email: req.body.email})
+        if (client) {
+            if (validatePassword(client.password, requestPassword)) {
+                return res.status(202).send({id: client._id})
+            } else {
+                return res.status(401).send({error: 'Wrong password'})
+            }
+        }
         const trainer = await TrainerModel.findOne({email: req.body.email})
         if (trainer) {
-            const userPassword = trainer.password
-            const requestPassword = req.body.password
-            if (validatePassword(userPassword, requestPassword)) {
+            if (validatePassword(trainer.password, requestPassword)) {
                 return res.status(202).send({id: trainer._id})
             } else {
-                return res.status(406).send({error: 'Wrong password'})
+                return res.status(401).send({error: 'Wrong password'})
             }
         } else {
-            return res.status(406).send({error: 'User not found'})
+            return res.status(404).send({error: 'User not found'})
         }
     } catch (error) {
         console.log(error);
@@ -130,10 +173,79 @@ app.post('/login', async (req, res) => {
 app.get('/trainer/clients/:id', async (req, res) => {
     try {
         const trainerId = req.params.id
-        const clients = await ClientModel.find({ trainerId: trainerId})
+        const clients = await ClientModel.find({trainerId: trainerId})
         if (clients) {
             return res.status(200).send(clients)
         }
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
+})
+
+app.get('/schedule/:id', async (req, res) => {
+    try {
+        const trainerId = req.params.id
+        const workouts = []
+        const clients = await ClientModel.find({trainerId: trainerId})
+        for (const client of clients) {
+            const clientWorkouts = await WorkoutModel.find({userId: client._id})
+            for (const clientWorkout of clientWorkouts) {
+                const workoutWithClientName = {
+                    ...(await clientWorkout).toObject(),
+                    userName: client.name
+                }
+                workouts.push(workoutWithClientName)
+            }
+        }
+        const trainerWorkouts = await WorkoutModel.find({userId: trainerId})
+        for (const trainerWorkout of trainerWorkouts) {
+            const trainerWorkoutWithTag = {
+                ...(await trainerWorkout).toObject(),
+                userName: 'Me'
+            }
+            workouts.push(trainerWorkoutWithTag)
+        }
+        return res.status(200).send(workouts)
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
+})
+
+app.post('/add-workout', async (req, res) => {
+    try {
+        await WorkoutModel.create({
+            userId: req.body.userId,
+            date: new Date(req.body.date),
+            description: req.body.description
+        })
+        return res.status(200).send('New workout added')
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
+})
+
+app.delete('/delete-workout=:workoutID', async (req, res) => {
+    try {
+        await WorkoutModel.findByIdAndDelete(req.params.workoutID)
+        return res.status(200).send('Workout deleted')
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
+
+})
+
+app.get('/get-exercises/:workoutId', async (req, res) => {
+    try {
+        const exercises = await ExerciseModel.find({workoutId: req.params.workoutId})
+        if (!exercises) {
+            return res.status(404).send('Exercises not found');
+        }
+        console.log(exercises)
+        return res.status(200).json(exercises);
     } catch (error) {
         console.log(error)
         return res.status(500).send('Internal Server Error')
