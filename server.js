@@ -8,6 +8,7 @@ const bodyParser = require("body-parser")
 const TrainerModel = require("./models/Trainer")
 const ClientModel = require("./models/Client")
 const WorkoutModel = require("./models/Workouts")
+const ExerciseModel = require("./models/Exercise")
 
 const corsOptions = {
     origin: ['http://localhost:3000', process.env.APP_URI]
@@ -71,6 +72,28 @@ async function saveWorkout() {
             date: new Date("2023-05-16")
         })
         await workout.save()
+    } catch (e) {
+        console.log(e.message)
+    }
+}
+
+async function saveExercise() {
+    try {
+        const exercise = new ExerciseModel({
+            workoutId: '6459014383f9cd4e5c17269e',
+            exerciseName: 'Lift Red Bull can',
+            sets: [
+                {
+                    weight: 2.5,
+                    reps: 300
+                },
+                {
+                    weight: 5,
+                    reps: 200
+                }
+                ]
+        })
+        await exercise.save()
     } catch (e) {
         console.log(e.message)
     }
@@ -178,7 +201,7 @@ app.get('/schedule/:id', async (req, res) => {
         const trainerWorkouts = await WorkoutModel.find({userId: trainerId})
         for (const trainerWorkout of trainerWorkouts) {
             const trainerWorkoutWithTag = {
-                ...(await  trainerWorkout).toObject(),
+                ...(await trainerWorkout).toObject(),
                 userName: 'Me'
             }
             workouts.push(trainerWorkoutWithTag)
@@ -204,7 +227,7 @@ app.post('/add-workout', async (req, res) => {
     }
 })
 
-app.delete('/delete-workout=:workoutID', async (req, res) =>{
+app.delete('/delete-workout=:workoutID', async (req, res) => {
     try {
         await WorkoutModel.findByIdAndDelete(req.params.workoutID)
         return res.status(200).send('Workout deleted')
@@ -213,6 +236,20 @@ app.delete('/delete-workout=:workoutID', async (req, res) =>{
         return res.status(500).send('Internal Server Error')
     }
 
+})
+
+app.get('/get-exercises/:workoutId', async (req, res) => {
+    try {
+        const exercises = await ExerciseModel.find({workoutId: req.params.workoutId})
+        if (!exercises) {
+            return res.status(404).send('Exercises not found');
+        }
+        console.log(exercises)
+        return res.status(200).json(exercises);
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
+    }
 })
 
 // app.post('/register', async (req, res) => {
