@@ -4,7 +4,7 @@ const express = require("express")
 const cors = require("cors")
 const mongoose = require("mongoose")
 const bodyParser = require("body-parser")
-
+const bcrypt = require('bcrypt');
 const TrainerModel = require("./models/Trainer")
 const ClientModel = require("./models/Client")
 const WorkoutModel = require("./models/Workouts")
@@ -145,30 +145,32 @@ function validatePassword(thePassword, validatingPassword) {
 
 app.post('/login', async (req, res) => {
     try {
-        const requestPassword = req.body.password
-        const client = await ClientModel.findOne({email: req.body.email})
+        const requestPassword = req.body.password;
+        const client = await ClientModel.findOne({ email: req.body.email });
         if (client) {
-            if (validatePassword(client.password, requestPassword)) {
-                return res.status(202).send({id: client._id})
+            if (await bcrypt.compare(requestPassword, client.password)) {
+                return res.status(202).send({ id: client._id });
             } else {
-                return res.status(401).send({error: 'Wrong password'})
+                return res.status(401).send({ error: 'Wrong password' });
             }
         }
-        const trainer = await TrainerModel.findOne({email: req.body.email})
+
+        const trainer = await TrainerModel.findOne({ email: req.body.email });
         if (trainer) {
-            if (validatePassword(trainer.password, requestPassword)) {
-                return res.status(202).send({id: trainer._id})
+            if (await bcrypt.compare(requestPassword, trainer.password)) {
+                return res.status(202).send({ id: trainer._id });
             } else {
-                return res.status(401).send({error: 'Wrong password'})
+                return res.status(401).send({ error: 'Wrong password' });
             }
         } else {
-            return res.status(404).send({error: 'User not found'})
+            return res.status(404).send({ error: 'User not found' });
         }
     } catch (error) {
         console.log(error);
-        return res.status(500).send('Internal Server Error')
+        return res.status(500).send('Internal Server Error');
     }
-})
+});
+
 
 app.get('/trainer/clients/:id', async (req, res) => {
     try {
@@ -266,12 +268,16 @@ app.put('/remove_client/:trainerId/:id', async (req, res) => {
     }
 });
 
-
 app.post('/register', async (req, res) => {
     try {
+        const existingClient = await ClientModel.findOne({ email: req.body.email });
+        if (existingClient) {
+            return res.status(400).send('Email already exists');
+        }
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
         const client = new ClientModel({
             name: req.body.name,
-            password: req.body.password,
+            password: hashedPassword,
             birthday: new Date("1947-06-30"),
             gender: "",
             email: req.body.email,
@@ -280,6 +286,7 @@ app.post('/register', async (req, res) => {
             phone: req.body.phone,
             trainerId: null
         });
+
         await client.save();
         res.status(200).send(client);
     } catch (error) {
@@ -287,4 +294,6 @@ app.post('/register', async (req, res) => {
         res.status(500).send("Failed to register an account.");
     }
 });
+
+
 
