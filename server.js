@@ -39,7 +39,6 @@ async function saveTrainer() {
             home_gym: "Tartu GYM!",
             phone: "595959555"
         })
-        console.log(trainer)
         await trainer.save()
     } catch (e) {
         console.log(e.message)
@@ -246,7 +245,6 @@ app.get('/get-exercises/:workoutId', async (req, res) => {
         if (!exercises) {
             return res.status(404).send('Exercises not found');
         }
-        console.log(exercises)
         return res.status(200).json(exercises);
     } catch (error) {
         console.log(error)
@@ -294,6 +292,68 @@ app.post('/register', async (req, res) => {
         res.status(500).send("Failed to register an account.");
     }
 });
+
+app.post('/add-exercise/:workoutId', async (req, res) => {
+    try {
+        const exercise = new ExerciseModel({
+            workoutId: req.params.workoutId,
+            exerciseName: req.body.exerciseName,
+            sets: []
+        })
+        await exercise.save()
+        res.status(200).send(exercise)
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Failed to register an account.");
+    }
+})
+
+app.put('/add-exercise-set/:exerciseId', async (req, res) => {
+    try {
+        const exercise = await ExerciseModel.findById(req.params.exerciseId);
+        if (!exercise) {
+            return res.status(404).json({ error: "Exercise not found" });
+        }
+
+        const newSet = {
+            weight: req.body.weight,
+            reps: req.body.reps
+        };
+        exercise.sets.push(newSet);
+        const updatedExercise = await exercise.save();
+        res.status(200).json(updatedExercise);
+    } catch (error) {
+        console.log("Error:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+app.delete('/exercise-set/:exerciseId/:setIndex', async (req, res) => {
+    const { exerciseId, setIndex } = req.params;
+
+    try {
+        const exercise = await ExerciseModel.findById(exerciseId);
+
+        if (!exercise) {
+            return res.status(404).json({ error: "Exercise not found" });
+        }
+
+        // Check if the setIndex is valid
+        if (setIndex < 0 || setIndex >= exercise.sets.length) {
+            return res.status(404).json({ error: "Set not found" });
+        }
+
+        // Remove the set from the sets array
+        exercise.sets.splice(setIndex, 1);
+        const updatedExercise = await exercise.save();
+
+        res.status(200).json(updatedExercise); // Return the updated exercise data
+    } catch (error) {
+        console.log("Error:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 
 
 
