@@ -236,7 +236,6 @@ app.delete('/delete-workout=:workoutID', async (req, res) => {
         console.log(error)
         return res.status(500).send('Internal Server Error')
     }
-
 })
 
 app.get('/get-exercises/:workoutId', async (req, res) => {
@@ -305,6 +304,16 @@ app.post('/add-exercise/:workoutId', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).send("Failed to register an account.");
+    }
+})
+
+app.delete('/delete-exercise/:id', async (req, res) => {
+    try {
+        await ExerciseModel.findByIdAndDelete(req.params.id)
+        return res.status(200).send('Workout deleted')
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send('Internal Server Error')
     }
 })
 
