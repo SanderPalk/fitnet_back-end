@@ -9,6 +9,14 @@ const TrainerModel = require("./models/Trainer")
 const ClientModel = require("./models/Client")
 const WorkoutModel = require("./models/Workouts")
 const ExerciseModel = require("./models/Exercise")
+const rateLimit = require('express-rate-limit');
+
+// Create a limiter to allow 5 requests per minute
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 5, // 5 requests per minute
+});
+
 
 const corsOptions = {
     origin: ['http://localhost:3000', process.env.APP_URI]
@@ -116,9 +124,7 @@ app.put('/trainers/:id', async (req, res) => {
     try {
         const id = req.params.id;
         const updatedFields = {
-            name: req.body.name,
             birthday: req.body.birthday,
-            email: req.body.email,
             phone: req.body.phone,
             gender: req.body.gender,
             city: req.body.city,
@@ -130,6 +136,7 @@ app.put('/trainers/:id', async (req, res) => {
             }
         });
         await TrainerModel.findOneAndUpdate({_id: id}, updatedFields, {new: true});
+        return res.status(200).send("")
     } catch (error) {
         console.log(error);
         return res.status(500).send('Internal Server Error');
@@ -142,10 +149,13 @@ function validatePassword(thePassword, validatingPassword) {
     }
 }
 
-app.post('/login', async (req, res) => {
+
+// Apply the limiter middleware to the login route
+app.post('/login', limiter, async (req, res) => {
     try {
         const requestPassword = req.body.password;
         const client = await ClientModel.findOne({ email: req.body.email });
+
         if (client) {
             if (await bcrypt.compare(requestPassword, client.password)) {
                 return res.status(202).send({ id: client._id });
@@ -166,9 +176,15 @@ app.post('/login', async (req, res) => {
         }
     } catch (error) {
         console.log(error);
+        if (error.status === 429) {
+            console.log('Rate limit exceeded');
+            return res.status(429).send('Rate limit exceeded');
+        }
+
         return res.status(500).send('Internal Server Error');
     }
 });
+
 
 
 app.get('/trainer/clients/:id', async (req, res) => {
