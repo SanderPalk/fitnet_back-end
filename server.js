@@ -10,6 +10,7 @@ const ClientModel = require("./models/Client")
 const WorkoutModel = require("./models/Workouts")
 const ExerciseModel = require("./models/Exercise")
 const rateLimit = require('express-rate-limit');
+const NewsModel = require("./models/News");
 
 // Create a limiter to allow 5 requests per minute
 const limiter = rateLimit({
@@ -376,6 +377,37 @@ app.delete('/exercise-set/:exerciseId/:setIndex', async (req, res) => {
     } catch (error) {
         console.log("Error:", error);
         res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+
+app.post('/news', async (req, res) => {
+    try {
+        const { newsText, author, postedDate } = req.body;
+
+        const newsItem = new NewsModel({
+            newsText,
+            author,
+            postedDate,
+        });
+
+        await newsItem.save();
+
+        res.status(201).json({ success: true, message: "News item created successfully" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+
+app.get('/news', async (req, res) => {
+    try {
+        const newsItems = await NewsModel.find();
+
+        res.status(200).json({ success: true, data: newsItems });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
 
